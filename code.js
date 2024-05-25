@@ -18,8 +18,11 @@ let operands=document.querySelectorAll('.operand');
 let numTotal="0";
 let actionCount=0;
 let positive=true;
+let keepGoing=false;
+let previousAction='';
 let equals=document.querySelector('#equals');
 let clearAll=()=>{
+    positive=true;
     actionFlag=false;
     bothInputted=false;
     numTotal="0";
@@ -36,6 +39,8 @@ let clearAll=()=>{
         currentNumber.style.border="1px solid black";
         currentNumber='';
     }
+    actionCount=0;
+    keepGoing=false;
 }
 container.addEventListener('click',(event)=>{
    
@@ -43,18 +48,20 @@ container.addEventListener('click',(event)=>{
    // if actionflag is false  this means an action hasn't been done yet which means we are still inputting the first number 
         if(target.classList.contains('number')){
             console.log(total);
-            if(total && target.id !=="dot" && actionCount===0){
-                console.log("total in this is "+total);
-                clearAll();
-            }
+          
             if(currentNumber){
                 currentNumber.style.border="1px solid black"
                }
                target.style.border="2px solid black"
                 currentNumber=target;
+                if((total && keepGoing) || target.id=="dot" || target.id=="reverse"){
+                    console.log("total in clear is "+total);
+                    clearAll();     
+                }
                if(numTotal==="0"){
                 numTotal="";
                }
+           
                     switch(target.id){
                         case "num0":
                              numTotal+="0";
@@ -97,9 +104,10 @@ container.addEventListener('click',(event)=>{
                            
                     }
                 
-                if(target.classList.contains('reverse') && numTotal && !numTotal.includes('-')){
-                    positive=false;
-                    numTotal= positive  ? numTotal  : numTotal="-"+numTotal;
+                if(target.classList.contains('reverse') && numTotal){
+                    positive= !positive;
+                    console.log(positive+" - this is the value");
+                    numTotal= positive  ? numTotal.slice(1)  : numTotal="-"+numTotal;
                 }
                
                 if(!total){
@@ -110,13 +118,10 @@ container.addEventListener('click',(event)=>{
                     else {
                         selectedNum1=numTotal;
                        }
-                }
-                else if(total && target.id==="dot"){
-                    total=numTotal;  
-                
-                }  
+                } 
                 else selectedNum1=numTotal;
-                resultDisplay.textContent=numTotal;
+                (numTotal==="" ||numTotal==="-")? resultDisplay.textContent="0": resultDisplay.textContent=numTotal;
+              
                         }
             // if(actionFlag && !total){
             //     selectedNum2=numTotal;
@@ -129,10 +134,18 @@ container.addEventListener('click',(event)=>{
             // }
          
    if(target.classList.contains('action')){
+    actionCount++;
+  //this is done on second actionCount
+  //idea is to save the previous action element's id in a variable
+  //if current action-target.id is same as last action-target.id(from the variable)
+  //then operate with lastAction variable and the two selected nums
+  //check if there is a total - if there is operate with lastAction and total and selectedNum1
+
+    positive=true;
     if(!numTotal){
         resultDisplay.textContent=total;
     }
-    actionCount++;
+    console.log("action count is - "+actionCount)
     switch(target.id){
         case "multiply":
             action="multiply";
@@ -147,7 +160,23 @@ container.addEventListener('click',(event)=>{
             action="add";
             break;
     }
-
+    if(actionFlag && actionCount===2 && selectedNum1){
+        keepGoing=true;
+        if(total){
+            operate(previousAction,total,selectedNum1);
+        }
+        else operate(previousAction,selectedNum1,selectedNum2);
+    }
+   else if(previousAction===action && actionCount===2 && (selectedNum1 || total)){
+        console.log("action-count 2 activated");
+            selectedNum2=selectedNum1;
+            console.log(total+" - this is the total in action-count2");
+            if(operated){
+                console.log('has been operated'); 
+                operate(action,total,total);
+            } 
+            else operate(action,selectedNum1,selectedNum2);
+        }
     if(currentAction){
         currentAction.style.outline="none"
        }
@@ -160,17 +189,7 @@ container.addEventListener('click',(event)=>{
    }
    actionFlag=true;
    numTotal="0";
-   if(actionCount===2 && (selectedNum1 || total)){
-    console.log("action-count 2 activated");
-        selectedNum2=selectedNum1;
-        console.log(total+" - this is the total in action-count2");
-        if(operated){
-            console.log('has been operated');
-            operate(action,total,total);
-        } 
-        else operate(action,selectedNum1,selectedNum2);
-        actionCount=0;
-    }
+    previousAction=action;
    }
 
    if(target.id==="equals" && bothInputted || target.id==="equals" && total!==0){
@@ -229,7 +248,10 @@ let operate = (action,num1,num2)=>{
     bothInputted=false;
     actionCount=0;
     positive=false;
-
+    if(keepGoing){
+        actionCount=1;
+    }
+    keepGoing=false;
 }
 
 clear.addEventListener('click',clearAll);
